@@ -41,6 +41,14 @@ impl<T> VecVec<T> {
     }
 }
 
+pub struct Slice<'a, T: 'a> {
+    inner: &'a VecVec<T>,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
