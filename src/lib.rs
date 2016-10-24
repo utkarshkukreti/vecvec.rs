@@ -63,6 +63,24 @@ pub struct Slice<'a, T: 'a> {
     height: usize,
 }
 
+impl<'a, T: 'a> Slice<'a, T> {
+    pub fn x(&self) -> usize {
+        self.x
+    }
+
+    pub fn y(&self) -> usize {
+        self.y
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,5 +115,11 @@ mod tests {
         assert!(vv.slice(4, 3, 0, 1).is_none());
         assert!(vv.slice(4, 3, 1, 0).is_none());
         assert!(vv.slice(9, 9, 0, 0).is_none());
+
+        let slice = vv.slice(0, 1, 3, 2).unwrap();
+        assert_eq!(slice.x(), 0);
+        assert_eq!(slice.y(), 1);
+        assert_eq!(slice.width(), 3);
+        assert_eq!(slice.height(), 2);
     }
 }
