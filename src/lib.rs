@@ -19,6 +19,10 @@ impl<T> VecVec<T> {
     pub fn width(&self) -> usize {
         self.width
     }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
 }
 
 #[cfg(test)]
@@ -29,5 +33,6 @@ mod tests {
     fn it_works() {
         let vv = VecVec::new(4, 3, 'a');
         assert_eq!(vv.width(), 4);
+        assert_eq!(vv.height(), 3);
     }
 }
