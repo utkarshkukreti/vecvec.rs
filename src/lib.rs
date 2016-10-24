@@ -39,6 +39,20 @@ impl<T> VecVec<T> {
             None
         }
     }
+
+    pub fn slice(&self, x: usize, y: usize, width: usize, height: usize) -> Option<Slice<T>> {
+        if x + width <= self.width && y + height <= self.height {
+            Some(Slice {
+                inner: self,
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+            })
+        } else {
+            None
+        }
+    }
 }
 
 pub struct Slice<'a, T: 'a> {
@@ -71,5 +85,17 @@ mod tests {
                 assert_eq!(vv.get_mut(x, y), None);
             }
         }
+
+        assert!(vv.slice(0, 0, 0, 0).is_some());
+        assert!(vv.slice(0, 0, 1, 1).is_some());
+        assert!(vv.slice(0, 0, 4, 3).is_some());
+        assert!(vv.slice(4, 3, 0, 0).is_some());
+
+        assert!(vv.slice(0, 0, 5, 1).is_none());
+        assert!(vv.slice(0, 0, 1, 4).is_none());
+        assert!(vv.slice(0, 0, 1, 4).is_none());
+        assert!(vv.slice(4, 3, 0, 1).is_none());
+        assert!(vv.slice(4, 3, 1, 0).is_none());
+        assert!(vv.slice(9, 9, 0, 0).is_none());
     }
 }
