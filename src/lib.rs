@@ -79,6 +79,14 @@ impl<'a, T: 'a> Slice<'a, T> {
     pub fn height(&self) -> usize {
         self.height
     }
+
+    pub fn get(&self, x: usize, y: usize) -> Option<&T> {
+        if x < self.width && y < self.height {
+            self.inner.get(self.x + x, self.y + y)
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -121,5 +129,15 @@ mod tests {
         assert_eq!(slice.y(), 1);
         assert_eq!(slice.width(), 3);
         assert_eq!(slice.height(), 2);
+
+        for x in 0..10 {
+            for y in 0..10 {
+                if x < 3 && y < 2 {
+                    assert_eq!(slice.get(x, y), vv.get(x, y + 1));
+                } else {
+                    assert_eq!(slice.get(x, y), None);
+                }
+            }
+        }
     }
 }
