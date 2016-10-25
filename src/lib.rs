@@ -136,6 +136,22 @@ impl<'a, T: 'a> SliceMut<'a, T> {
     pub fn height(&self) -> usize {
         self.height
     }
+
+    pub fn get(&self, x: usize, y: usize) -> Option<&T> {
+        if x < self.width && y < self.height {
+            unsafe { (*self.inner).get(self.x + x, self.y + y) }
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
+        if x < self.width && y < self.height {
+            unsafe { (*self.inner).get_mut(self.x + x, self.y + y) }
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -191,10 +207,22 @@ mod tests {
             }
         }
 
-        let slice_mut = vv.slice_mut(0, 1, 3, 2).unwrap();
+        let mut vv_clone = vv.clone();
+        let mut slice_mut = vv_clone.slice_mut(0, 1, 3, 2).unwrap();
         assert_eq!(slice_mut.x(), 0);
         assert_eq!(slice_mut.y(), 1);
         assert_eq!(slice_mut.width(), 3);
         assert_eq!(slice_mut.height(), 2);
+        for (i, (x, y)) in (0..10).flat_map(|x| (0..10).map(move |y| (x, y))).enumerate() {
+            if x < 3 && y < 2 {
+                assert_eq!(*slice_mut.get(x, y).unwrap(), *vv.get(x, y + 1).unwrap());
+                *slice_mut.get_mut(x, y).unwrap() = i;
+                assert_eq!(*slice_mut.get(x, y).unwrap(), i);
+                assert_eq!(*slice_mut.get_mut(x, y).unwrap(), i);
+            } else {
+                assert_eq!(slice_mut.get(x, y), None);
+                assert_eq!(slice_mut.get_mut(x, y), None);
+            }
+        }
     }
 }
