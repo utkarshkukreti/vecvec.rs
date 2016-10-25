@@ -84,6 +84,15 @@ impl<T> VecVec<T> {
             None
         }
     }
+
+    pub fn vsplit_at(&self, x: usize) -> Option<(Slice<T>, Slice<T>)> {
+        if x <= self.width {
+            Some((self.slice(0, 0, x, self.height).unwrap(),
+                  self.slice(x, 0, self.width - x, self.height).unwrap()))
+        } else {
+            None
+        }
+    }
 }
 
 pub struct Slice<'a, T: 'a> {
@@ -277,5 +286,50 @@ mod tests {
 
         assert!(vv.hsplit_at(4).is_none());
         assert!(vv.hsplit_at(5).is_none());
+
+        let mut vv = VecVec::new(4, 3, 0);
+        for (i, (x, y)) in (0..4).flat_map(|x| (0..3).map(move |y| (x, y))).enumerate() {
+            *vv.get_mut(x, y).unwrap() = i;
+        }
+
+        let (first, rest) = vv.vsplit_at(1).unwrap();
+
+        assert_eq!(first.x(), 0);
+        assert_eq!(first.y(), 0);
+        assert_eq!(first.width(), 1);
+        assert_eq!(first.height(), 3);
+        assert_eq!(*first.get(0, 0).unwrap(), 0);
+        assert_eq!(*first.get(0, 1).unwrap(), 1);
+        assert_eq!(*first.get(0, 2).unwrap(), 2);
+        assert_eq!(first.get(0, 3), None);
+        assert_eq!(first.get(1, 0), None);
+        assert_eq!(first.get(4, 0), None);
+
+        assert_eq!(rest.x(), 1);
+        assert_eq!(rest.y(), 0);
+        assert_eq!(rest.width(), 3);
+        assert_eq!(rest.height(), 3);
+        assert_eq!(*rest.get(0, 0).unwrap(), 3);
+        assert_eq!(*rest.get(0, 1).unwrap(), 4);
+        assert_eq!(*rest.get(0, 2).unwrap(), 5);
+        assert_eq!(*rest.get(1, 0).unwrap(), 6);
+        assert_eq!(*rest.get(1, 1).unwrap(), 7);
+        assert_eq!(*rest.get(1, 2).unwrap(), 8);
+        assert_eq!(*rest.get(2, 0).unwrap(), 9);
+        assert_eq!(*rest.get(2, 1).unwrap(), 10);
+        assert_eq!(*rest.get(2, 2).unwrap(), 11);
+        assert_eq!(rest.get(2, 3), None);
+        assert_eq!(rest.get(3, 2), None);
+        assert_eq!(rest.get(3, 0), None);
+        assert_eq!(rest.get(0, 3), None);
+
+        let (_, empty) = vv.vsplit_at(4).unwrap();
+        assert_eq!(empty.width(), 0);
+        assert_eq!(empty.height(), 3);
+        assert_eq!(empty.get(0, 0), None);
+        assert_eq!(empty.get(1, 0), None);
+        assert_eq!(empty.get(0, 1), None);
+
+        assert!(vv.vsplit_at(5).is_none());
     }
 }
