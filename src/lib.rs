@@ -55,6 +55,26 @@ impl<T> VecVec<T> {
             None
         }
     }
+
+    pub fn slice_mut(&mut self,
+                     x: usize,
+                     y: usize,
+                     width: usize,
+                     height: usize)
+                     -> Option<SliceMut<T>> {
+        if x + width <= self.width && y + height <= self.height {
+            Some(SliceMut {
+                inner: self as *mut _,
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                marker: marker::PhantomData,
+            })
+        } else {
+            None
+        }
+    }
 }
 
 pub struct Slice<'a, T: 'a> {
@@ -135,20 +155,24 @@ mod tests {
         assert!(vv.slice(4, 3, 1, 0).is_none());
         assert!(vv.slice(9, 9, 0, 0).is_none());
 
-        let slice = vv.slice(0, 1, 3, 2).unwrap();
-        assert_eq!(slice.x(), 0);
-        assert_eq!(slice.y(), 1);
-        assert_eq!(slice.width(), 3);
-        assert_eq!(slice.height(), 2);
+        {
+            let slice = vv.slice(0, 1, 3, 2).unwrap();
+            assert_eq!(slice.x(), 0);
+            assert_eq!(slice.y(), 1);
+            assert_eq!(slice.width(), 3);
+            assert_eq!(slice.height(), 2);
 
-        for x in 0..10 {
-            for y in 0..10 {
-                if x < 3 && y < 2 {
-                    assert_eq!(slice.get(x, y), vv.get(x, y + 1));
-                } else {
-                    assert_eq!(slice.get(x, y), None);
+            for x in 0..10 {
+                for y in 0..10 {
+                    if x < 3 && y < 2 {
+                        assert_eq!(slice.get(x, y), vv.get(x, y + 1));
+                    } else {
+                        assert_eq!(slice.get(x, y), None);
+                    }
                 }
             }
         }
+
+        let _slice_mut = vv.slice_mut(0, 1, 3, 2).unwrap();
     }
 }
