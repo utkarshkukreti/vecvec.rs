@@ -1,3 +1,5 @@
+use std::marker;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VecVec<T> {
     inner: Vec<T>,
@@ -87,6 +89,15 @@ impl<'a, T: 'a> Slice<'a, T> {
             None
         }
     }
+}
+
+pub struct SliceMut<'a, T: 'a> {
+    inner: *mut VecVec<T>,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    marker: marker::PhantomData<&'a mut VecVec<T>>,
 }
 
 #[cfg(test)]
