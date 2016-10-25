@@ -120,6 +120,24 @@ pub struct SliceMut<'a, T: 'a> {
     marker: marker::PhantomData<&'a mut VecVec<T>>,
 }
 
+impl<'a, T: 'a> SliceMut<'a, T> {
+    pub fn x(&self) -> usize {
+        self.x
+    }
+
+    pub fn y(&self) -> usize {
+        self.y
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -173,6 +191,10 @@ mod tests {
             }
         }
 
-        let _slice_mut = vv.slice_mut(0, 1, 3, 2).unwrap();
+        let slice_mut = vv.slice_mut(0, 1, 3, 2).unwrap();
+        assert_eq!(slice_mut.x(), 0);
+        assert_eq!(slice_mut.y(), 1);
+        assert_eq!(slice_mut.width(), 3);
+        assert_eq!(slice_mut.height(), 2);
     }
 }
