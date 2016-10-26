@@ -96,6 +96,19 @@ impl<T> VecVec<T> {
         }
     }
 
+    pub fn vsplit_at_mut(&mut self, x: usize) -> Option<(SliceMut<T>, SliceMut<T>)> {
+        if x <= self.width {
+            let width = self.width;
+            let height = self.height;
+            unsafe {
+                Some((self.slice_mut_unsafe(0, 0, x, height).unwrap(),
+                      self.slice_mut_unsafe(x, 0, width - x, height).unwrap()))
+            }
+        } else {
+            None
+        }
+    }
+
     // Unsafe because the lifetime attached to the return value is chosen by the
     // caller. The caller must ensure the chosen lifetime does not cause memory
     // unsafety.
@@ -419,5 +432,69 @@ mod tests {
 
         assert!(vv.hsplit_at_mut(4).is_none());
         assert!(vv.hsplit_at_mut(5).is_none());
+
+        let mut vv = VecVec::new(4, 3, 0);
+        for (i, (x, y)) in (0..4).flat_map(|x| (0..3).map(move |y| (x, y))).enumerate() {
+            *vv.get_mut(x, y).unwrap() = i;
+        }
+
+        {
+            let (mut first, mut rest) = vv.vsplit_at_mut(1).unwrap();
+
+            assert_eq!(first.x(), 0);
+            assert_eq!(first.y(), 0);
+            assert_eq!(first.width(), 1);
+            assert_eq!(first.height(), 3);
+            assert_eq!(*first.get(0, 0).unwrap(), 0);
+            assert_eq!(*first.get(0, 1).unwrap(), 1);
+            assert_eq!(*first.get(0, 2).unwrap(), 2);
+            assert_eq!(first.get(0, 3), None);
+            assert_eq!(first.get(1, 0), None);
+            assert_eq!(first.get(4, 0), None);
+
+            assert_eq!(rest.x(), 1);
+            assert_eq!(rest.y(), 0);
+            assert_eq!(rest.width(), 3);
+            assert_eq!(rest.height(), 3);
+            assert_eq!(*rest.get(0, 0).unwrap(), 3);
+            assert_eq!(*rest.get(0, 1).unwrap(), 4);
+            assert_eq!(*rest.get(0, 2).unwrap(), 5);
+            assert_eq!(*rest.get(1, 0).unwrap(), 6);
+            assert_eq!(*rest.get(1, 1).unwrap(), 7);
+            assert_eq!(*rest.get(1, 2).unwrap(), 8);
+            assert_eq!(*rest.get(2, 0).unwrap(), 9);
+            assert_eq!(*rest.get(2, 1).unwrap(), 10);
+            assert_eq!(*rest.get(2, 2).unwrap(), 11);
+            assert_eq!(rest.get(2, 3), None);
+            assert_eq!(rest.get(3, 2), None);
+            assert_eq!(rest.get(3, 0), None);
+            assert_eq!(rest.get(0, 3), None);
+
+            for x in 0..10 {
+                for y in 0..10 {
+                    if let Some(i) = first.get_mut(x, y) {
+                        *i = *i * *i;
+                    }
+                    if let Some(i) = rest.get_mut(x, y) {
+                        *i = *i * *i;
+                    }
+                }
+            }
+        }
+
+        for (i, (x, y)) in (0..4).flat_map(|x| (0..3).map(move |y| (x, y))).enumerate() {
+            assert_eq!(*vv.get(x, y).unwrap(), i * i);
+        }
+
+        {
+            let (_, empty) = vv.vsplit_at_mut(4).unwrap();
+            assert_eq!(empty.width(), 0);
+            assert_eq!(empty.height(), 3);
+            assert_eq!(empty.get(0, 0), None);
+            assert_eq!(empty.get(1, 0), None);
+            assert_eq!(empty.get(0, 1), None);
+        }
+
+        assert!(vv.vsplit_at_mut(5).is_none());
     }
 }
