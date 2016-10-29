@@ -213,6 +213,23 @@ impl<T: PartialEq, Mutability> PartialEq for Slice<T, Mutability> {
     }
 }
 
+impl<'a, T: PartialEq, Mutability> PartialEq<&'a [&'a [T]]> for Slice<T, Mutability> {
+    fn eq(&self, rhs: &&[&[T]]) -> bool {
+        if rhs.len() == self.height() && rhs.iter().all(|row| row.len() == self.width()) {
+            for y in 0..self.height() {
+                for x in 0..self.width() {
+                    if self.get(x, y).unwrap() != &rhs[x][y] {
+                        return false;
+                    }
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -511,5 +528,14 @@ mod tests {
         assert!(vv.slice(5, 5, 0, 0).unwrap() == vv.slice(2, 2, 0, 0).unwrap());
         assert!(vv.slice(0, 0, 2, 2).unwrap() != vv.slice(2, 2, 0, 0).unwrap());
         assert!(vv.slice(5, 5, 1, 1).unwrap() == vv.slice(5, 5, 1, 1).unwrap());
+
+        macro_rules! s {
+            ($($expr:expr),*) => { &[$($expr),*][..] }
+        }
+        assert!(vv.slice(0, 0, 2, 2).unwrap() == s![s!['a', 'a'], s!['a', 'a']]);
+        assert!(vv.slice(0, 0, 2, 2).unwrap() != s![s!['a', 'a']]);
+        assert!(vv.slice(0, 0, 2, 2).unwrap() != s![s!['a', 'a'], s!['a', 'a'], s!['a', 'a']]);
+        assert!(vv.slice(2, 2, 0, 0).unwrap() == s![]);
+        assert!(vv.slice(1, 2, 2, 2).unwrap() == s![s!['b', 'a'], s!['a', 'a']]);
     }
 }
