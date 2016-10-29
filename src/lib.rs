@@ -196,6 +196,23 @@ impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
     }
 }
 
+impl<T: PartialEq, Mutability> PartialEq for Slice<T, Mutability> {
+    fn eq(&self, rhs: &Self) -> bool {
+        if self.width() == rhs.width() && self.height() == rhs.height() {
+            for y in 0..self.height() {
+                for x in 0..self.width() {
+                    if self.get(x, y).unwrap() != rhs.get(x, y).unwrap() {
+                        return false;
+                    }
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -482,5 +499,17 @@ mod tests {
         }
 
         assert!(vv.vsplit_at_mut(5).is_none());
+
+        let mut vv = VecVec::new(7, 7, 'a');
+        assert!(vv.slice(0, 0, 2, 2).unwrap() == vv.slice(1, 1, 2, 2).unwrap());
+        assert!(vv.slice(1, 2, 3, 4).unwrap() == vv.slice(2, 1, 3, 4).unwrap());
+        assert!(vv.slice(5, 5, 0, 0).unwrap() == vv.slice(2, 2, 0, 0).unwrap());
+        assert!(vv.slice(0, 0, 2, 2).unwrap() != vv.slice(2, 2, 0, 0).unwrap());
+        *vv.get_mut(1, 2).unwrap() = 'b';
+        assert!(vv.slice(0, 0, 2, 2).unwrap() != vv.slice(1, 1, 2, 2).unwrap());
+        assert!(vv.slice(1, 2, 3, 4).unwrap() != vv.slice(2, 1, 3, 4).unwrap());
+        assert!(vv.slice(5, 5, 0, 0).unwrap() == vv.slice(2, 2, 0, 0).unwrap());
+        assert!(vv.slice(0, 0, 2, 2).unwrap() != vv.slice(2, 2, 0, 0).unwrap());
+        assert!(vv.slice(5, 5, 1, 1).unwrap() == vv.slice(5, 5, 1, 1).unwrap());
     }
 }
