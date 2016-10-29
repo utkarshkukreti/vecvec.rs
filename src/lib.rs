@@ -42,14 +42,20 @@ impl<T> VecVec<T> {
         }
     }
 
-    pub fn slice(&self, x: usize, y: usize, width: usize, height: usize) -> Option<Slice<T>> {
+    pub fn slice(&self,
+                 x: usize,
+                 y: usize,
+                 width: usize,
+                 height: usize)
+                 -> Option<Slice<T, Immutable<T>>> {
         if x + width <= self.width && y + height <= self.height {
             Some(Slice {
-                inner: self,
+                ptr: self as *const _,
                 x: x,
                 y: y,
                 width: width,
                 height: height,
+                _mutability: Immutable { marker: marker::PhantomData },
             })
         } else {
             None
@@ -61,11 +67,11 @@ impl<T> VecVec<T> {
                      y: usize,
                      width: usize,
                      height: usize)
-                     -> Option<SliceMut<T>> {
+                     -> Option<Slice<T, Mutable<T>>> {
         unsafe { self.slice_mut_unsafe(x, y, width, height) }
     }
 
-    pub fn hsplit_at(&self, y: usize) -> Option<(Slice<T>, Slice<T>)> {
+    pub fn hsplit_at(&self, y: usize) -> Option<(Slice<T, Immutable<T>>, Slice<T, Immutable<T>>)> {
         if y <= self.height {
             Some((self.slice(0, 0, self.width, y).unwrap(),
                   self.slice(0, y, self.width, self.height - y).unwrap()))
@@ -74,7 +80,7 @@ impl<T> VecVec<T> {
         }
     }
 
-    pub fn vsplit_at(&self, x: usize) -> Option<(Slice<T>, Slice<T>)> {
+    pub fn vsplit_at(&self, x: usize) -> Option<(Slice<T, Immutable<T>>, Slice<T, Immutable<T>>)> {
         if x <= self.width {
             Some((self.slice(0, 0, x, self.height).unwrap(),
                   self.slice(x, 0, self.width - x, self.height).unwrap()))
@@ -83,7 +89,9 @@ impl<T> VecVec<T> {
         }
     }
 
-    pub fn hsplit_at_mut(&mut self, y: usize) -> Option<(SliceMut<T>, SliceMut<T>)> {
+    pub fn hsplit_at_mut(&mut self,
+                         y: usize)
+                         -> Option<(Slice<T, Mutable<T>>, Slice<T, Mutable<T>>)> {
         if y <= self.height {
             let width = self.width;
             let height = self.height;
@@ -96,7 +104,9 @@ impl<T> VecVec<T> {
         }
     }
 
-    pub fn vsplit_at_mut(&mut self, x: usize) -> Option<(SliceMut<T>, SliceMut<T>)> {
+    pub fn vsplit_at_mut(&mut self,
+                         x: usize)
+                         -> Option<(Slice<T, Mutable<T>>, Slice<T, Mutable<T>>)> {
         if x <= self.width {
             let width = self.width;
             let height = self.height;
@@ -117,15 +127,15 @@ impl<T> VecVec<T> {
                                            y: usize,
                                            width: usize,
                                            height: usize)
-                                           -> Option<SliceMut<'arbitrary, T>> {
+                                           -> Option<Slice<T, Mutable<'arbitrary, T>>> {
         if x + width <= self.width && y + height <= self.height {
-            Some(SliceMut {
-                inner: self as *mut _,
+            Some(Slice {
+                ptr: self as *mut _,
                 x: x,
                 y: y,
                 width: width,
                 height: height,
-                marker: marker::PhantomData,
+                _mutability: Mutable { marker: marker::PhantomData },
             })
         } else {
             None
@@ -133,50 +143,24 @@ impl<T> VecVec<T> {
     }
 }
 
-pub struct Slice<'a, T: 'a> {
-    inner: &'a VecVec<T>,
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize,
+pub struct Immutable<'a, T: 'a> {
+    marker: marker::PhantomData<&'a VecVec<T>>,
 }
 
-impl<'a, T: 'a> Slice<'a, T> {
-    pub fn x(&self) -> usize {
-        self.x
-    }
-
-    pub fn y(&self) -> usize {
-        self.y
-    }
-
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn height(&self) -> usize {
-        self.height
-    }
-
-    pub fn get(&self, x: usize, y: usize) -> Option<&T> {
-        if x < self.width && y < self.height {
-            self.inner.get(self.x + x, self.y + y)
-        } else {
-            None
-        }
-    }
-}
-
-pub struct SliceMut<'a, T: 'a> {
-    inner: *mut VecVec<T>,
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize,
+pub struct Mutable<'a, T: 'a> {
     marker: marker::PhantomData<&'a mut VecVec<T>>,
 }
 
-impl<'a, T: 'a> SliceMut<'a, T> {
+pub struct Slice<T, Mutability> {
+    ptr: *const VecVec<T>,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    _mutability: Mutability,
+}
+
+impl<'a, T, Mutability> Slice<T, Mutability> {
     pub fn x(&self) -> usize {
         self.x
     }
@@ -195,15 +179,17 @@ impl<'a, T: 'a> SliceMut<'a, T> {
 
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         if x < self.width && y < self.height {
-            unsafe { (*self.inner).get(self.x + x, self.y + y) }
+            unsafe { (*self.ptr).get(self.x + x, self.y + y) }
         } else {
             None
         }
     }
+}
 
+impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
     pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
         if x < self.width && y < self.height {
-            unsafe { (*self.inner).get_mut(self.x + x, self.y + y) }
+            unsafe { (*(self.ptr as *mut VecVec<T>)).get_mut(self.x + x, self.y + y) }
         } else {
             None
         }
