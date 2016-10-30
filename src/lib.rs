@@ -218,7 +218,7 @@ impl<'a, T: PartialEq, Mutability> PartialEq<&'a [&'a [T]]> for Slice<T, Mutabil
         if rhs.len() == self.height() && rhs.iter().all(|row| row.len() == self.width()) {
             for y in 0..self.height() {
                 for x in 0..self.width() {
-                    if self.get(x, y).unwrap() != &rhs[x][y] {
+                    if self.get(x, y).unwrap() != &rhs[y][x] {
                         return false;
                     }
                 }
