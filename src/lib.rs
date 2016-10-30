@@ -234,6 +234,10 @@ impl<'a, T: PartialEq, Mutability> PartialEq<&'a [&'a [T]]> for Slice<T, Mutabil
 mod tests {
     use super::*;
 
+    macro_rules! s {
+        ($($expr:expr),*) => { &[$($expr),*][..] }
+    }
+
     #[test]
     fn it_works() {
         let mut vv = VecVec::new(4, 3, 0);
@@ -310,37 +314,16 @@ mod tests {
 
         assert_eq!(first.x(), 0);
         assert_eq!(first.y(), 0);
-        assert_eq!(first.width(), 4);
-        assert_eq!(first.height(), 1);
-        assert_eq!(*first.get(0, 0).unwrap(), 0);
-        assert_eq!(*first.get(1, 0).unwrap(), 1);
-        assert_eq!(*first.get(2, 0).unwrap(), 2);
-        assert_eq!(*first.get(3, 0).unwrap(), 3);
-        assert_eq!(first.get(4, 0), None);
-        assert_eq!(first.get(0, 1), None);
+        assert!(first == s![s![0, 1, 2, 3]]);
 
         assert_eq!(rest.x(), 0);
         assert_eq!(rest.y(), 1);
-        assert_eq!(rest.width(), 4);
-        assert_eq!(rest.height(), 2);
-        assert_eq!(*rest.get(0, 0).unwrap(), 4);
-        assert_eq!(*rest.get(1, 0).unwrap(), 5);
-        assert_eq!(*rest.get(2, 0).unwrap(), 6);
-        assert_eq!(*rest.get(3, 0).unwrap(), 7);
-        assert_eq!(*rest.get(0, 1).unwrap(), 8);
-        assert_eq!(*rest.get(1, 1).unwrap(), 9);
-        assert_eq!(*rest.get(2, 1).unwrap(), 10);
-        assert_eq!(*rest.get(3, 1).unwrap(), 11);
-        assert_eq!(rest.get(4, 0), None);
-        assert_eq!(rest.get(4, 1), None);
-        assert_eq!(rest.get(0, 3), None);
+        assert!(rest == s![s![4, 5, 6, 7], s![8, 9, 10, 11]]);
 
         let (_, empty) = vv.hsplit_at(3).unwrap();
         assert_eq!(empty.width(), 4);
         assert_eq!(empty.height(), 0);
-        assert_eq!(empty.get(0, 0), None);
-        assert_eq!(empty.get(1, 0), None);
-        assert_eq!(empty.get(0, 1), None);
+        assert!(empty == s![]);
 
         assert!(vv.hsplit_at(4).is_none());
         assert!(vv.hsplit_at(5).is_none());
@@ -354,39 +337,14 @@ mod tests {
 
         assert_eq!(first.x(), 0);
         assert_eq!(first.y(), 0);
-        assert_eq!(first.width(), 1);
-        assert_eq!(first.height(), 3);
-        assert_eq!(*first.get(0, 0).unwrap(), 0);
-        assert_eq!(*first.get(0, 1).unwrap(), 1);
-        assert_eq!(*first.get(0, 2).unwrap(), 2);
-        assert_eq!(first.get(0, 3), None);
-        assert_eq!(first.get(1, 0), None);
-        assert_eq!(first.get(4, 0), None);
+        assert!(first == s![s![0], s![1], s![2]]);
 
         assert_eq!(rest.x(), 1);
         assert_eq!(rest.y(), 0);
-        assert_eq!(rest.width(), 3);
-        assert_eq!(rest.height(), 3);
-        assert_eq!(*rest.get(0, 0).unwrap(), 3);
-        assert_eq!(*rest.get(0, 1).unwrap(), 4);
-        assert_eq!(*rest.get(0, 2).unwrap(), 5);
-        assert_eq!(*rest.get(1, 0).unwrap(), 6);
-        assert_eq!(*rest.get(1, 1).unwrap(), 7);
-        assert_eq!(*rest.get(1, 2).unwrap(), 8);
-        assert_eq!(*rest.get(2, 0).unwrap(), 9);
-        assert_eq!(*rest.get(2, 1).unwrap(), 10);
-        assert_eq!(*rest.get(2, 2).unwrap(), 11);
-        assert_eq!(rest.get(2, 3), None);
-        assert_eq!(rest.get(3, 2), None);
-        assert_eq!(rest.get(3, 0), None);
-        assert_eq!(rest.get(0, 3), None);
+        assert!(rest == s![s![3, 6, 9], s![4, 7, 10], s![5, 8, 11]]);
 
         let (_, empty) = vv.vsplit_at(4).unwrap();
-        assert_eq!(empty.width(), 0);
-        assert_eq!(empty.height(), 3);
-        assert_eq!(empty.get(0, 0), None);
-        assert_eq!(empty.get(1, 0), None);
-        assert_eq!(empty.get(0, 1), None);
+        assert!(empty == s![s![], s![], s![]]);
 
         assert!(vv.vsplit_at(5).is_none());
 
@@ -400,30 +358,11 @@ mod tests {
 
             assert_eq!(first.x(), 0);
             assert_eq!(first.y(), 0);
-            assert_eq!(first.width(), 4);
-            assert_eq!(first.height(), 1);
-            assert_eq!(*first.get(0, 0).unwrap(), 0);
-            assert_eq!(*first.get(1, 0).unwrap(), 1);
-            assert_eq!(*first.get(2, 0).unwrap(), 2);
-            assert_eq!(*first.get(3, 0).unwrap(), 3);
-            assert_eq!(first.get(4, 0), None);
-            assert_eq!(first.get(0, 1), None);
+            assert!(first == s![s![0, 1, 2, 3]]);
 
             assert_eq!(rest.x(), 0);
             assert_eq!(rest.y(), 1);
-            assert_eq!(rest.width(), 4);
-            assert_eq!(rest.height(), 2);
-            assert_eq!(*rest.get(0, 0).unwrap(), 4);
-            assert_eq!(*rest.get(1, 0).unwrap(), 5);
-            assert_eq!(*rest.get(2, 0).unwrap(), 6);
-            assert_eq!(*rest.get(3, 0).unwrap(), 7);
-            assert_eq!(*rest.get(0, 1).unwrap(), 8);
-            assert_eq!(*rest.get(1, 1).unwrap(), 9);
-            assert_eq!(*rest.get(2, 1).unwrap(), 10);
-            assert_eq!(*rest.get(3, 1).unwrap(), 11);
-            assert_eq!(rest.get(4, 0), None);
-            assert_eq!(rest.get(4, 1), None);
-            assert_eq!(rest.get(0, 3), None);
+            assert!(rest == s![s![4, 5, 6, 7], s![8, 9, 10, 11]]);
 
             for x in 0..10 {
                 for y in 0..10 {
@@ -444,10 +383,7 @@ mod tests {
         {
             let (_, empty) = vv.hsplit_at_mut(3).unwrap();
             assert_eq!(empty.width(), 4);
-            assert_eq!(empty.height(), 0);
-            assert_eq!(empty.get(0, 0), None);
-            assert_eq!(empty.get(1, 0), None);
-            assert_eq!(empty.get(0, 1), None);
+            assert!(empty == s![]);
         }
 
         assert!(vv.hsplit_at_mut(4).is_none());
@@ -463,32 +399,11 @@ mod tests {
 
             assert_eq!(first.x(), 0);
             assert_eq!(first.y(), 0);
-            assert_eq!(first.width(), 1);
-            assert_eq!(first.height(), 3);
-            assert_eq!(*first.get(0, 0).unwrap(), 0);
-            assert_eq!(*first.get(0, 1).unwrap(), 1);
-            assert_eq!(*first.get(0, 2).unwrap(), 2);
-            assert_eq!(first.get(0, 3), None);
-            assert_eq!(first.get(1, 0), None);
-            assert_eq!(first.get(4, 0), None);
+            assert!(first == s![s![0], s![1], s![2]]);
 
             assert_eq!(rest.x(), 1);
             assert_eq!(rest.y(), 0);
-            assert_eq!(rest.width(), 3);
-            assert_eq!(rest.height(), 3);
-            assert_eq!(*rest.get(0, 0).unwrap(), 3);
-            assert_eq!(*rest.get(0, 1).unwrap(), 4);
-            assert_eq!(*rest.get(0, 2).unwrap(), 5);
-            assert_eq!(*rest.get(1, 0).unwrap(), 6);
-            assert_eq!(*rest.get(1, 1).unwrap(), 7);
-            assert_eq!(*rest.get(1, 2).unwrap(), 8);
-            assert_eq!(*rest.get(2, 0).unwrap(), 9);
-            assert_eq!(*rest.get(2, 1).unwrap(), 10);
-            assert_eq!(*rest.get(2, 2).unwrap(), 11);
-            assert_eq!(rest.get(2, 3), None);
-            assert_eq!(rest.get(3, 2), None);
-            assert_eq!(rest.get(3, 0), None);
-            assert_eq!(rest.get(0, 3), None);
+            assert!(rest == s![s![3, 6, 9], s![4, 7, 10], s![5, 8, 11]]);
 
             for x in 0..10 {
                 for y in 0..10 {
@@ -508,11 +423,7 @@ mod tests {
 
         {
             let (_, empty) = vv.vsplit_at_mut(4).unwrap();
-            assert_eq!(empty.width(), 0);
-            assert_eq!(empty.height(), 3);
-            assert_eq!(empty.get(0, 0), None);
-            assert_eq!(empty.get(1, 0), None);
-            assert_eq!(empty.get(0, 1), None);
+            assert!(empty == s![s![], s![], s![]]);
         }
 
         assert!(vv.vsplit_at_mut(5).is_none());
@@ -529,9 +440,6 @@ mod tests {
         assert!(vv.slice(0, 0, 2, 2).unwrap() != vv.slice(2, 2, 0, 0).unwrap());
         assert!(vv.slice(5, 5, 1, 1).unwrap() == vv.slice(5, 5, 1, 1).unwrap());
 
-        macro_rules! s {
-            ($($expr:expr),*) => { &[$($expr),*][..] }
-        }
         assert!(vv.slice(0, 0, 2, 2).unwrap() == s![s!['a', 'a'], s!['a', 'a']]);
         assert!(vv.slice(0, 0, 2, 2).unwrap() != s![s!['a', 'a']]);
         assert!(vv.slice(0, 0, 2, 2).unwrap() != s![s!['a', 'a'], s!['a', 'a'], s!['a', 'a']]);
