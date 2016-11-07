@@ -1,6 +1,6 @@
-use std::marker;
+use std::{fmt, marker};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct VecVec<T> {
     inner: Vec<T>,
     width: usize,
@@ -143,6 +143,12 @@ impl<T> VecVec<T> {
     }
 }
 
+impl<T: fmt::Debug> fmt::Debug for VecVec<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.slice(0, 0, self.width, self.height).unwrap().fmt(f)
+    }
+}
+
 pub struct Immutable<'a, T: 'a> {
     marker: marker::PhantomData<&'a VecVec<T>>,
 }
@@ -210,6 +216,24 @@ impl<T: PartialEq, Mutability> PartialEq for Slice<T, Mutability> {
         } else {
             false
         }
+    }
+}
+
+impl<T: fmt::Debug, Mutability> fmt::Debug for Slice<T, Mutability> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        struct Row<'a, T: fmt::Debug + 'a, Mutability: 'a>(&'a Slice<T, Mutability>, usize);
+
+        impl<'a, T: fmt::Debug, Mutability> fmt::Debug for Row<'a, T, Mutability> {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.debug_list()
+                    .entries((0..self.0.width).map(|x| self.0.get(x, self.1).unwrap()))
+                    .finish()
+            }
+        }
+
+        f.debug_list()
+            .entries((0..self.height).map(|y| Row(self, y)))
+            .finish()
     }
 }
 
@@ -445,5 +469,16 @@ mod tests {
         assert!(vv.slice(0, 0, 2, 2).unwrap() != s![s!['a', 'a'], s!['a', 'a'], s!['a', 'a']]);
         assert!(vv.slice(2, 2, 0, 0).unwrap() == s![]);
         assert!(vv.slice(1, 2, 2, 2).unwrap() == s![s!['b', 'a'], s!['a', 'a']]);
+
+        #[derive(Clone, Debug)]
+        struct Foo;
+        let vv = VecVec::new(2, 3, Foo);
+        assert_eq!(format!("{:?}", vv), "[[Foo, Foo], [Foo, Foo], [Foo, Foo]]");
+        assert_eq!(format!("{:?}", vv.slice(0, 0, 0, 0).unwrap()), "[]");
+        assert_eq!(format!("{:?}", vv.slice(0, 0, 1, 1).unwrap()), "[[Foo]]");
+        assert_eq!(format!("{:?}", vv.slice(0, 0, 1, 2).unwrap()),
+                   "[[Foo], [Foo]]");
+        assert_eq!(format!("{:?}", vv.slice(0, 0, 2, 1).unwrap()),
+                   "[[Foo, Foo]]");
     }
 }
