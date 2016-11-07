@@ -240,14 +240,9 @@ impl<T: fmt::Debug, Mutability> fmt::Debug for Slice<T, Mutability> {
 impl<'a, T: PartialEq, Mutability> PartialEq<&'a [&'a [T]]> for Slice<T, Mutability> {
     fn eq(&self, rhs: &&[&[T]]) -> bool {
         if rhs.len() == self.height() && rhs.iter().all(|row| row.len() == self.width()) {
-            for y in 0..self.height() {
-                for x in 0..self.width() {
-                    if self.get(x, y).unwrap() != &rhs[y][x] {
-                        return false;
-                    }
-                }
-            }
-            true
+            rhs.iter().enumerate().all(|(y, row)| {
+                row.iter().enumerate().all(|(x, cell)| self.get(x, y).unwrap() == cell)
+            })
         } else {
             false
         }
