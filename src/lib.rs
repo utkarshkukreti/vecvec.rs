@@ -130,6 +130,17 @@ impl<T> VecVec<T> {
         }
     }
 
+    pub fn as_mut_slice(&self) -> Slice<T, Mutable<T>> {
+        Slice {
+            ptr: self as *const _,
+            x: 0,
+            y: 0,
+            width: self.width,
+            height: self.height,
+            _mutability: Mutable { marker: marker::PhantomData },
+        }
+    }
+
     // Unsafe because the lifetime attached to the return value is chosen by the
     // caller. The caller must ensure the chosen lifetime does not cause memory
     // unsafety.
@@ -503,5 +514,18 @@ mod tests {
         assert_eq!(slice.width(), vv.width());
         assert_eq!(slice.height(), vv.height());
         assert_eq!(slice, vv.slice(0, 0, vv.width(), vv.height()).unwrap());
+
+        {
+            let vv_clone = vv.clone();
+            let mut slice = vv.as_mut_slice();
+            assert_eq!(slice.x(), 0);
+            assert_eq!(slice.y(), 0);
+            assert_eq!(slice.width(), vv.width());
+            assert_eq!(slice.height(), vv.height());
+            assert_eq!(slice,
+                       vv_clone.slice(0, 0, vv.width(), vv.height()).unwrap());
+            *slice.get_mut(0, 0).unwrap() = 1;
+        }
+        assert_eq!(*vv.get(0, 0).unwrap(), 1);
     }
 }
