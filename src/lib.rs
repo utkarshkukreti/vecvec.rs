@@ -48,18 +48,7 @@ impl<T> VecVec<T> {
                  width: usize,
                  height: usize)
                  -> Option<Slice<T, Immutable<T>>> {
-        if x + width <= self.width && y + height <= self.height {
-            Some(Slice {
-                ptr: self as *const _,
-                x: x,
-                y: y,
-                width: width,
-                height: height,
-                _mutability: Immutable { marker: marker::PhantomData },
-            })
-        } else {
-            None
-        }
+        self.as_slice().slice(x, y, width, height)
     }
 
     pub fn slice_mut(&mut self,
@@ -208,6 +197,26 @@ impl<'a, T, Mutability> Slice<T, Mutability> {
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         if x < self.width && y < self.height {
             unsafe { (*self.ptr).get(self.x + x, self.y + y) }
+        } else {
+            None
+        }
+    }
+
+    pub fn slice(&self,
+                 x: usize,
+                 y: usize,
+                 width: usize,
+                 height: usize)
+                 -> Option<Slice<T, Immutable<'a, T>>> {
+        if x + width <= self.width && y + height <= self.height {
+            Some(Slice {
+                ptr: self.ptr,
+                x: self.x + x,
+                y: self.y + y,
+                width: width,
+                height: height,
+                _mutability: Immutable { marker: marker::PhantomData },
+            })
         } else {
             None
         }
@@ -527,5 +536,14 @@ mod tests {
             *slice.get_mut(0, 0).unwrap() = 1;
         }
         assert_eq!(*vv.get(0, 0).unwrap(), 1);
+
+        let mut vv = VecVec::new(4, 3, 0);
+        for (i, (x, y)) in (0..3).flat_map(|y| (0..4).map(move |x| (x, y))).enumerate() {
+            *vv.get_mut(x, y).unwrap() = i;
+        }
+
+        let slice = vv.as_slice();
+        assert_eq!(slice.slice(0, 0, 0, 0).unwrap(), s![]);
+        assert_eq!(slice.slice(0, 0, 2, 2).unwrap(), s![s![0, 1], s![4, 5]]);
     }
 }
