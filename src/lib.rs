@@ -213,8 +213,8 @@ impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
     }
 }
 
-impl<T: PartialEq, Mutability> PartialEq for Slice<T, Mutability> {
-    fn eq(&self, rhs: &Self) -> bool {
+impl<T: PartialEq, M1, M2> PartialEq<Slice<T, M2>> for Slice<T, M1> {
+    fn eq(&self, rhs: &Slice<T, M2>) -> bool {
         if self.width() == rhs.width() && self.height() == rhs.height() {
             for y in 0..self.height() {
                 for x in 0..self.width() {
@@ -469,6 +469,11 @@ mod tests {
         assert!(vv.slice(5, 5, 0, 0).unwrap() == vv.slice(2, 2, 0, 0).unwrap());
         assert!(vv.slice(0, 0, 2, 2).unwrap() != vv.slice(2, 2, 0, 0).unwrap());
         assert!(vv.slice(5, 5, 1, 1).unwrap() == vv.slice(5, 5, 1, 1).unwrap());
+
+        {
+            let mut vv_clone = vv.clone();
+            assert!(vv.slice(0, 0, 2, 2).unwrap() == vv_clone.slice_mut(0, 0, 2, 2).unwrap());
+        }
 
         assert!(vv.slice(0, 0, 2, 2).unwrap() == s![s!['a', 'a'], s!['a', 'a']]);
         assert!(vv.slice(0, 0, 2, 2).unwrap() != s![s!['a', 'a']]);
