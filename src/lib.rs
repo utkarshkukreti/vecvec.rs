@@ -61,21 +61,11 @@ impl<T> VecVec<T> {
     }
 
     pub fn hsplit_at(&self, y: usize) -> Option<(Slice<T, Immutable<T>>, Slice<T, Immutable<T>>)> {
-        if y <= self.height {
-            Some((self.slice(0, 0, self.width, y).unwrap(),
-                  self.slice(0, y, self.width, self.height - y).unwrap()))
-        } else {
-            None
-        }
+        self.as_slice().hsplit_at(y)
     }
 
     pub fn vsplit_at(&self, x: usize) -> Option<(Slice<T, Immutable<T>>, Slice<T, Immutable<T>>)> {
-        if x <= self.width {
-            Some((self.slice(0, 0, x, self.height).unwrap(),
-                  self.slice(x, 0, self.width - x, self.height).unwrap()))
-        } else {
-            None
-        }
+        self.as_slice().vsplit_at(x)
     }
 
     pub fn hsplit_at_mut(&mut self,
@@ -217,6 +207,28 @@ impl<'a, T, Mutability> Slice<T, Mutability> {
                 height: height,
                 _mutability: Immutable { marker: marker::PhantomData },
             })
+        } else {
+            None
+        }
+    }
+
+    pub fn hsplit_at(&self,
+                     y: usize)
+                     -> Option<(Slice<T, Immutable<'a, T>>, Slice<T, Immutable<'a, T>>)> {
+        if y <= self.height {
+            Some((self.slice(0, 0, self.width, y).unwrap(),
+                  self.slice(0, y, self.width, self.height - y).unwrap()))
+        } else {
+            None
+        }
+    }
+
+    pub fn vsplit_at(&self,
+                     x: usize)
+                     -> Option<(Slice<T, Immutable<'a, T>>, Slice<T, Immutable<'a, T>>)> {
+        if x <= self.width {
+            Some((self.slice(0, 0, x, self.height).unwrap(),
+                  self.slice(x, 0, self.width - x, self.height).unwrap()))
         } else {
             None
         }
@@ -545,5 +557,23 @@ mod tests {
         let slice = vv.as_slice();
         assert_eq!(slice.slice(0, 0, 0, 0).unwrap(), s![]);
         assert_eq!(slice.slice(0, 0, 2, 2).unwrap(), s![s![0, 1], s![4, 5]]);
+
+        let (_0123_4567, _) = vv.hsplit_at(2).unwrap();
+        let (_0123, _4567) = _0123_4567.hsplit_at(1).unwrap();
+        assert_eq!(_0123, s![s![0, 1, 2, 3]]);
+        assert_eq!(_4567, s![s![4, 5, 6, 7]]);
+        let (_012, _3) = _0123.vsplit_at(3).unwrap();
+        assert_eq!(_012, s![s![0, 1, 2]]);
+        assert_eq!(_3, s![s![3]]);
+        let (_4, _567) = _4567.vsplit_at(1).unwrap();
+        assert_eq!(_4, s![s![4]]);
+        assert_eq!(_567, s![s![5, 6, 7]]);
+        let (empty, _567) = _567.vsplit_at(0).unwrap();
+        assert_eq!(empty, s![s![]]);
+        assert_eq!(_567, s![s![5, 6, 7]]);
+
+        assert_eq!(vv.hsplit_at(4), None);
+        assert_eq!(vv.hsplit_at(0).unwrap().0.vsplit_at(5), None);
+        assert_eq!(vv.vsplit_at(5), None);
     }
 }
