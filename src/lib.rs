@@ -57,7 +57,7 @@ impl<T> VecVec<T> {
                      width: usize,
                      height: usize)
                      -> Option<Slice<T, Mutable<T>>> {
-        unsafe { self.slice_mut_unsafe(x, y, width, height) }
+        self.as_mut_slice().slice_mut(x, y, width, height)
     }
 
     pub fn hsplit_at(&self, y: usize) -> Option<(Slice<T, Immutable<T>>, Slice<T, Immutable<T>>)> {
@@ -75,8 +75,8 @@ impl<T> VecVec<T> {
             let width = self.width;
             let height = self.height;
             unsafe {
-                Some((self.slice_mut_unsafe(0, 0, width, y).unwrap(),
-                      self.slice_mut_unsafe(0, y, width, height - y).unwrap()))
+                Some((self.as_mut_slice().slice_mut_unsafe(0, 0, width, y).unwrap(),
+                      self.as_mut_slice().slice_mut_unsafe(0, y, width, height - y).unwrap()))
             }
         } else {
             None
@@ -90,8 +90,8 @@ impl<T> VecVec<T> {
             let width = self.width;
             let height = self.height;
             unsafe {
-                Some((self.slice_mut_unsafe(0, 0, x, height).unwrap(),
-                      self.slice_mut_unsafe(x, 0, width - x, height).unwrap()))
+                Some((self.as_mut_slice().slice_mut_unsafe(0, 0, x, height).unwrap(),
+                      self.as_mut_slice().slice_mut_unsafe(x, 0, width - x, height).unwrap()))
             }
         } else {
             None
@@ -117,29 +117,6 @@ impl<T> VecVec<T> {
             width: self.width,
             height: self.height,
             _mutability: Mutable { marker: marker::PhantomData },
-        }
-    }
-
-    // Unsafe because the lifetime attached to the return value is chosen by the
-    // caller. The caller must ensure the chosen lifetime does not cause memory
-    // unsafety.
-    unsafe fn slice_mut_unsafe<'arbitrary>(&mut self,
-                                           x: usize,
-                                           y: usize,
-                                           width: usize,
-                                           height: usize)
-                                           -> Option<Slice<T, Mutable<'arbitrary, T>>> {
-        if x + width <= self.width && y + height <= self.height {
-            Some(Slice {
-                ptr: self as *mut _,
-                x: x,
-                y: y,
-                width: width,
-                height: height,
-                _mutability: Mutable { marker: marker::PhantomData },
-            })
-        } else {
-            None
         }
     }
 }
@@ -239,6 +216,38 @@ impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
     pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
         if x < self.width && y < self.height {
             unsafe { (*(self.ptr as *mut VecVec<T>)).get_mut(self.x + x, self.y + y) }
+        } else {
+            None
+        }
+    }
+
+    pub fn slice_mut(&mut self,
+                     x: usize,
+                     y: usize,
+                     width: usize,
+                     height: usize)
+                     -> Option<Slice<T, Mutable<'a, T>>> {
+        unsafe { self.slice_mut_unsafe(x, y, width, height) }
+    }
+
+    // Unsafe because the lifetime attached to the return value is chosen by the
+    // caller. The caller must ensure the chosen lifetime does not cause memory
+    // unsafety.
+    unsafe fn slice_mut_unsafe<'arbitrary>(&mut self,
+                                           x: usize,
+                                           y: usize,
+                                           width: usize,
+                                           height: usize)
+                                           -> Option<Slice<T, Mutable<'arbitrary, T>>> {
+        if x + width <= self.width && y + height <= self.height {
+            Some(Slice {
+                ptr: self.ptr,
+                x: self.x + x,
+                y: self.y + y,
+                width: width,
+                height: height,
+                _mutability: Mutable { marker: marker::PhantomData },
+            })
         } else {
             None
         }
@@ -575,5 +584,18 @@ mod tests {
         assert_eq!(vv.hsplit_at(4), None);
         assert_eq!(vv.hsplit_at(0).unwrap().0.vsplit_at(5), None);
         assert_eq!(vv.vsplit_at(5), None);
+
+        let mut vv = VecVec::new(4, 3, 0);
+        for (i, (x, y)) in (0..3).flat_map(|y| (0..4).map(move |x| (x, y))).enumerate() {
+            *vv.get_mut(x, y).unwrap() = i;
+        }
+
+        {
+            let mut slice = vv.slice_mut(1, 1, 2, 2).unwrap();
+            *slice.slice_mut(0, 0, 1, 1).unwrap().get_mut(0, 0).unwrap() = 100;
+            *slice.slice_mut(1, 1, 1, 1).unwrap().get_mut(0, 0).unwrap() = 101;
+        }
+        assert_eq!(*vv.get(1, 1).unwrap(), 100);
+        assert_eq!(*vv.get(2, 2).unwrap(), 101);
     }
 }
