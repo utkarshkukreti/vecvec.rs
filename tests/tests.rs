@@ -135,10 +135,10 @@ fn it_works() {
         for x in 0..10 {
             for y in 0..10 {
                 if let Some(i) = first.get_mut(x, y) {
-                    *i = *i * *i;
+                    *i *= *i;
                 }
                 if let Some(i) = rest.get_mut(x, y) {
-                    *i = *i * *i;
+                    *i *= *i;
                 }
             }
         }
@@ -176,10 +176,10 @@ fn it_works() {
         for x in 0..10 {
             for y in 0..10 {
                 if let Some(i) = first.get_mut(x, y) {
-                    *i = *i * *i;
+                    *i *= *i;
                 }
                 if let Some(i) = rest.get_mut(x, y) {
-                    *i = *i * *i;
+                    *i *= *i;
                 }
             }
         }
