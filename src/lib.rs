@@ -47,7 +47,7 @@ impl<T> VecVec<T> {
                  y: usize,
                  width: usize,
                  height: usize)
-                 -> Option<Slice<T, Immutable<T>>> {
+                 -> Option<ImmutableSlice<T>> {
         self.as_slice().slice(x, y, width, height)
     }
 
@@ -56,31 +56,27 @@ impl<T> VecVec<T> {
                      y: usize,
                      width: usize,
                      height: usize)
-                     -> Option<Slice<T, Mutable<T>>> {
+                     -> Option<MutableSlice<T>> {
         self.as_mut_slice().slice_mut(x, y, width, height)
     }
 
-    pub fn hsplit_at(&self, y: usize) -> Option<(Slice<T, Immutable<T>>, Slice<T, Immutable<T>>)> {
+    pub fn hsplit_at(&self, y: usize) -> Option<(ImmutableSlice<T>, ImmutableSlice<T>)> {
         self.as_slice().hsplit_at(y)
     }
 
-    pub fn vsplit_at(&self, x: usize) -> Option<(Slice<T, Immutable<T>>, Slice<T, Immutable<T>>)> {
+    pub fn vsplit_at(&self, x: usize) -> Option<(ImmutableSlice<T>, ImmutableSlice<T>)> {
         self.as_slice().vsplit_at(x)
     }
 
-    pub fn hsplit_at_mut(&mut self,
-                         y: usize)
-                         -> Option<(Slice<T, Mutable<T>>, Slice<T, Mutable<T>>)> {
+    pub fn hsplit_at_mut(&mut self, y: usize) -> Option<(MutableSlice<T>, MutableSlice<T>)> {
         self.as_mut_slice().hsplit_at_mut(y)
     }
 
-    pub fn vsplit_at_mut(&mut self,
-                         x: usize)
-                         -> Option<(Slice<T, Mutable<T>>, Slice<T, Mutable<T>>)> {
+    pub fn vsplit_at_mut(&mut self, x: usize) -> Option<(MutableSlice<T>, MutableSlice<T>)> {
         self.as_mut_slice().vsplit_at_mut(x)
     }
 
-    pub fn as_slice(&self) -> Slice<T, Immutable<T>> {
+    pub fn as_slice(&self) -> ImmutableSlice<T> {
         Slice {
             ptr: self as *const _,
             x: 0,
@@ -91,7 +87,7 @@ impl<T> VecVec<T> {
         }
     }
 
-    pub fn as_mut_slice(&self) -> Slice<T, Mutable<T>> {
+    pub fn as_mut_slice(&self) -> MutableSlice<T> {
         Slice {
             ptr: self as *const _,
             x: 0,
@@ -126,6 +122,10 @@ pub struct Slice<T, Mutability> {
     _mutability: Mutability,
 }
 
+pub type ImmutableSlice<'a, T> = Slice<T, Immutable<'a, T>>;
+
+pub type MutableSlice<'a, T> = Slice<T, Mutable<'a, T>>;
+
 impl<'a, T, Mutability> Slice<T, Mutability> {
     pub fn x(&self) -> usize {
         self.x
@@ -156,7 +156,7 @@ impl<'a, T, Mutability> Slice<T, Mutability> {
                  y: usize,
                  width: usize,
                  height: usize)
-                 -> Option<Slice<T, Immutable<'a, T>>> {
+                 -> Option<ImmutableSlice<'a, T>> {
         if x + width <= self.width && y + height <= self.height {
             Some(Slice {
                 ptr: self.ptr,
@@ -171,9 +171,7 @@ impl<'a, T, Mutability> Slice<T, Mutability> {
         }
     }
 
-    pub fn hsplit_at(&self,
-                     y: usize)
-                     -> Option<(Slice<T, Immutable<'a, T>>, Slice<T, Immutable<'a, T>>)> {
+    pub fn hsplit_at(&self, y: usize) -> Option<(ImmutableSlice<'a, T>, ImmutableSlice<'a, T>)> {
         if y <= self.height {
             Some((self.slice(0, 0, self.width, y).unwrap(),
                   self.slice(0, y, self.width, self.height - y).unwrap()))
@@ -182,9 +180,7 @@ impl<'a, T, Mutability> Slice<T, Mutability> {
         }
     }
 
-    pub fn vsplit_at(&self,
-                     x: usize)
-                     -> Option<(Slice<T, Immutable<'a, T>>, Slice<T, Immutable<'a, T>>)> {
+    pub fn vsplit_at(&self, x: usize) -> Option<(ImmutableSlice<'a, T>, ImmutableSlice<'a, T>)> {
         if x <= self.width {
             Some((self.slice(0, 0, x, self.height).unwrap(),
                   self.slice(x, 0, self.width - x, self.height).unwrap()))
@@ -208,13 +204,13 @@ impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
                      y: usize,
                      width: usize,
                      height: usize)
-                     -> Option<Slice<T, Mutable<'a, T>>> {
+                     -> Option<MutableSlice<'a, T>> {
         unsafe { self.slice_mut_unsafe(x, y, width, height) }
     }
 
     pub fn hsplit_at_mut(&mut self,
                          y: usize)
-                         -> Option<(Slice<T, Mutable<'a, T>>, Slice<T, Mutable<'a, T>>)> {
+                         -> Option<(MutableSlice<'a, T>, MutableSlice<'a, T>)> {
         if y <= self.height {
             let width = self.width;
             let height = self.height;
@@ -229,7 +225,7 @@ impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
 
     pub fn vsplit_at_mut(&mut self,
                          x: usize)
-                         -> Option<(Slice<T, Mutable<'a, T>>, Slice<T, Mutable<'a, T>>)> {
+                         -> Option<(MutableSlice<'a, T>, MutableSlice<'a, T>)> {
         if x <= self.width {
             let width = self.width;
             let height = self.height;
@@ -250,7 +246,7 @@ impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
                                            y: usize,
                                            width: usize,
                                            height: usize)
-                                           -> Option<Slice<T, Mutable<'arbitrary, T>>> {
+                                           -> Option<MutableSlice<'arbitrary, T>> {
         if x + width <= self.width && y + height <= self.height {
             Some(Slice {
                 ptr: self.ptr,
