@@ -2,5 +2,7 @@
 name = "vecvec"
 version = "0.1.0"
 authors = ["Utkarsh Kukreti <utkarshkukreti@gmail.com>"]
+description = "Two-dimensional Vec with support for mutable splits in either dimension."
+license = "MIT/Apache-2.0"
 
 [dependencies]
