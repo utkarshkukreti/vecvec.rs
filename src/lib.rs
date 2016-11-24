@@ -71,31 +71,13 @@ impl<T> VecVec<T> {
     pub fn hsplit_at_mut(&mut self,
                          y: usize)
                          -> Option<(Slice<T, Mutable<T>>, Slice<T, Mutable<T>>)> {
-        if y <= self.height {
-            let width = self.width;
-            let height = self.height;
-            unsafe {
-                Some((self.as_mut_slice().slice_mut_unsafe(0, 0, width, y).unwrap(),
-                      self.as_mut_slice().slice_mut_unsafe(0, y, width, height - y).unwrap()))
-            }
-        } else {
-            None
-        }
+        self.as_mut_slice().hsplit_at_mut(y)
     }
 
     pub fn vsplit_at_mut(&mut self,
                          x: usize)
                          -> Option<(Slice<T, Mutable<T>>, Slice<T, Mutable<T>>)> {
-        if x <= self.width {
-            let width = self.width;
-            let height = self.height;
-            unsafe {
-                Some((self.as_mut_slice().slice_mut_unsafe(0, 0, x, height).unwrap(),
-                      self.as_mut_slice().slice_mut_unsafe(x, 0, width - x, height).unwrap()))
-            }
-        } else {
-            None
-        }
+        self.as_mut_slice().vsplit_at_mut(x)
     }
 
     pub fn as_slice(&self) -> Slice<T, Immutable<T>> {
@@ -228,6 +210,36 @@ impl<'a, T: 'a> Slice<T, Mutable<'a, T>> {
                      height: usize)
                      -> Option<Slice<T, Mutable<'a, T>>> {
         unsafe { self.slice_mut_unsafe(x, y, width, height) }
+    }
+
+    pub fn hsplit_at_mut(&mut self,
+                         y: usize)
+                         -> Option<(Slice<T, Mutable<'a, T>>, Slice<T, Mutable<'a, T>>)> {
+        if y <= self.height {
+            let width = self.width;
+            let height = self.height;
+            unsafe {
+                Some((self.slice_mut_unsafe(0, 0, width, y).unwrap(),
+                      self.slice_mut_unsafe(0, y, width, height - y).unwrap()))
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn vsplit_at_mut(&mut self,
+                         x: usize)
+                         -> Option<(Slice<T, Mutable<'a, T>>, Slice<T, Mutable<'a, T>>)> {
+        if x <= self.width {
+            let width = self.width;
+            let height = self.height;
+            unsafe {
+                Some((self.slice_mut_unsafe(0, 0, x, height).unwrap(),
+                      self.slice_mut_unsafe(x, 0, width - x, height).unwrap()))
+            }
+        } else {
+            None
+        }
     }
 
     // Unsafe because the lifetime attached to the return value is chosen by the
@@ -597,5 +609,35 @@ mod tests {
         }
         assert_eq!(*vv.get(1, 1).unwrap(), 100);
         assert_eq!(*vv.get(2, 2).unwrap(), 101);
+
+        let mut vv = VecVec::new(4, 3, 0);
+        for (i, (x, y)) in (0..3).flat_map(|y| (0..4).map(move |x| (x, y))).enumerate() {
+            *vv.get_mut(x, y).unwrap() = i;
+        }
+
+        {
+            let (mut _0123_4567, _) = vv.hsplit_at_mut(2).unwrap();
+            let (mut _0123, mut _4567) = _0123_4567.hsplit_at_mut(1).unwrap();
+            assert_eq!(_0123, s![s![0, 1, 2, 3]]);
+            assert_eq!(_4567, s![s![4, 5, 6, 7]]);
+            let (mut _012, _3) = _0123.vsplit_at_mut(3).unwrap();
+            assert_eq!(_012, s![s![0, 1, 2]]);
+            assert_eq!(_3, s![s![3]]);
+            let (_4, mut _567) = _4567.vsplit_at_mut(1).unwrap();
+            assert_eq!(_4, s![s![4]]);
+            assert_eq!(_567, s![s![5, 6, 7]]);
+            let (empty, mut _567) = _567.vsplit_at_mut(0).unwrap();
+            assert_eq!(empty, s![s![]]);
+            assert_eq!(_567, s![s![5, 6, 7]]);
+            *_012.get_mut(0, 0).unwrap() = 100;
+            *_567.get_mut(2, 0).unwrap() = 101;
+        }
+
+        assert_eq!(*vv.get(0, 0).unwrap(), 100);
+        assert_eq!(*vv.get(3, 1).unwrap(), 101);
+
+        assert_eq!(vv.hsplit_at_mut(4), None);
+        assert_eq!(vv.hsplit_at_mut(0).unwrap().0.vsplit_at_mut(5), None);
+        assert_eq!(vv.vsplit_at_mut(5), None);
     }
 }
